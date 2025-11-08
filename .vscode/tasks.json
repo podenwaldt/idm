@@ -150,6 +150,34 @@
             "problemMatcher": []
         },
         {
+            "label": "Create Test Video from Fake Data",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "create_test_video.py",
+                "--data_dir", "fake_data/test",
+                "--output", "test_video.mp4"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Visualize Predictions on Video",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "visualize_predictions.py",
+                "--model_path", "${input:modelPath}",
+                "--video_path", "${input:videoPathVis}",
+                "--output_path", "${input:outputPathVis}",
+                "--resize_width", "640"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
             "label": "Install Requirements",
             "type": "shell",
             "command": "pip",
@@ -181,6 +209,24 @@
             "type": "promptString",
             "description": "Dataset directory to validate",
             "default": "data/train"
+        },
+        {
+            "id": "modelPath",
+            "type": "promptString",
+            "description": "Path to model checkpoint",
+            "default": "checkpoints/idm_best.pth"
+        },
+        {
+            "id": "videoPathVis",
+            "type": "promptString",
+            "description": "Path to input video for visualization",
+            "default": "input_video.mp4"
+        },
+        {
+            "id": "outputPathVis",
+            "type": "promptString",
+            "description": "Path to output visualization video",
+            "default": "predictions_visualization.mp4"
         }
     ]
 }

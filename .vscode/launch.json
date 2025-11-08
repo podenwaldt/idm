@@ -141,6 +141,21 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "Visualize Predictions (Fake Video)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/visualize_predictions.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_path", "checkpoints/idm_best.pth",
+                "--video_path", "input_video.mp4",
+                "--output_path", "predictions_visualization.mp4",
+                "--resize_width", "640"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
