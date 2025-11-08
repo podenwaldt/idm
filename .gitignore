@@ -50,22 +50,18 @@ ENV/
 data/
 datasets/
 fake_data/
-test_fake_data/
 *.jpg
 *.jpeg
 *.png
-*.mp4
+// *.mp4
 *.avi
 *.mov
 *.mkv
 
 # Checkpoints and logs
 checkpoints/
-test_checkpoints/
 logs/
 runs/
-evaluation/
-test_evaluation/
 results/
 
 # Model outputs
