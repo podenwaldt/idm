@@ -104,7 +104,7 @@ class PredictionVisualizer:
             panel,
             f"{state_name}",
             (20, title_height - 10),
-            cv2.FONT_HERSHEY_BOLD,
+            cv2.FONT_HERSHEY_SIMPLEX,
             0.9,
             state_color,
             2
@@ -114,7 +114,7 @@ class PredictionVisualizer:
             panel,
             f"{confidence:.1%}",
             (width - 120, title_height - 10),
-            cv2.FONT_HERSHEY_BOLD,
+            cv2.FONT_HERSHEY_SIMPLEX,
             0.9,
             (255, 255, 255),
             2
