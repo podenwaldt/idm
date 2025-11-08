@@ -1,0 +1,186 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Quick Test",
+            "type": "shell",
+            "command": "python",
+            "args": ["quick_test.py"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Test Installation",
+            "type": "shell",
+            "command": "python",
+            "args": ["test_installation.py"],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Generate Fake Data (Small)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "generate_fake_data.py",
+                "--output_dir", "fake_data",
+                "--num_train", "200",
+                "--num_val", "50",
+                "--num_test", "50"
+            ],
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Generate Fake Data (Large)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "generate_fake_data.py",
+                "--output_dir", "fake_data",
+                "--num_train", "1000",
+                "--num_val", "200",
+                "--num_test", "200"
+            ],
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Train Model (Fake Data - Quick)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "train.py",
+                "--train_dir", "fake_data/train",
+                "--val_dir", "fake_data/val",
+                "--test_dir", "fake_data/test",
+                "--batch_size", "16",
+                "--num_epochs", "10",
+                "--num_workers", "0"
+            ],
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Train Model (Real Data)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "train.py",
+                "--train_dir", "data/train",
+                "--val_dir", "data/val",
+                "--test_dir", "data/test",
+                "--batch_size", "32",
+                "--num_epochs", "50"
+            ],
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Run Inference (Test Frames)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "example_inference.py",
+                "--model_path", "checkpoints/idm_best.pth",
+                "--frames", "fake_data/test/frame_0000.jpg", "fake_data/test/frame_0001.jpg",
+                "--benchmark"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Convert Video to Frames",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m", "inverse_dynamics_model.data_preparation",
+                "convert",
+                "${input:videoPath}",
+                "${input:outputDir}",
+                "--fps", "30"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Split Dataset",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m", "inverse_dynamics_model.data_preparation",
+                "split",
+                "${input:sourceDir}",
+                "--train", "0.7",
+                "--val", "0.15",
+                "--test", "0.15"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Validate Dataset",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m", "inverse_dynamics_model.data_preparation",
+                "validate",
+                "${input:datasetDir}"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean Test Files",
+            "type": "shell",
+            "command": "rm",
+            "args": ["-rf", "fake_data", "test_fake_data", "test_checkpoints", "test_evaluation"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Requirements",
+            "type": "shell",
+            "command": "pip",
+            "args": ["install", "-r", "requirements.txt"],
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "videoPath",
+            "type": "promptString",
+            "description": "Path to video file",
+            "default": "video.mp4"
+        },
+        {
+            "id": "outputDir",
+            "type": "promptString",
+            "description": "Output directory for frames",
+            "default": "data/raw"
+        },
+        {
+            "id": "sourceDir",
+            "type": "promptString",
+            "description": "Source directory to split",
+            "default": "data/raw"
+        },
+        {
+            "id": "datasetDir",
+            "type": "promptString",
+            "description": "Dataset directory to validate",
+            "default": "data/train"
+        }
+    ]
+}

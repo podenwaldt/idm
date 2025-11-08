@@ -1,0 +1,153 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Quick Test (Full Pipeline)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/quick_test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Test Installation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_installation.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Generate Fake Data (Small)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/generate_fake_data.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--output_dir", "fake_data",
+                "--num_train", "200",
+                "--num_val", "50",
+                "--num_test", "50"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Generate Fake Data (Large)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/generate_fake_data.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--output_dir", "fake_data",
+                "--num_train", "1000",
+                "--num_val", "200",
+                "--num_test", "200"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Train Model (Fake Data - Quick)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train_dir", "fake_data/train",
+                "--val_dir", "fake_data/val",
+                "--test_dir", "fake_data/test",
+                "--batch_size", "16",
+                "--num_epochs", "10",
+                "--num_workers", "0"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Train Model (Real Data)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train_dir", "data/train",
+                "--val_dir", "data/val",
+                "--test_dir", "data/test",
+                "--batch_size", "32",
+                "--num_epochs", "50"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Run Inference (Test Frames)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/example_inference.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--model_path", "checkpoints/idm_best.pth",
+                "--frames", "fake_data/test/frame_0000.jpg", "fake_data/test/frame_0001.jpg",
+                "--benchmark"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Data Prep: Convert Video",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "inverse_dynamics_model.data_preparation",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "convert",
+                "video.mp4",
+                "data/raw",
+                "--fps", "30"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Data Prep: Split Dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "inverse_dynamics_model.data_preparation",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "split",
+                "data/raw",
+                "--train", "0.7",
+                "--val", "0.15",
+                "--test", "0.15"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Data Prep: Validate Dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "inverse_dynamics_model.data_preparation",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "validate",
+                "data/train"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
