@@ -122,8 +122,7 @@ class InverseDynamicsTrainer:
             mode='min',
             factor=self.config.scheduler_factor,
             patience=self.config.scheduler_patience,
-            min_lr=self.config.scheduler_min_lr,
-            verbose=True
+            min_lr=self.config.scheduler_min_lr
         )
 
     def train_epoch(self, epoch: int) -> float:

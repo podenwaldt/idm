@@ -11,6 +11,7 @@ from sklearn.metrics import confusion_matrix, classification_report, precision_r
 from typing import Dict, List, Tuple
 import os
 from pathlib import Path
+from typing import Optional
 
 from .config import IDMConfig
 
@@ -191,7 +192,7 @@ def print_metrics(metrics: Dict, config: IDMConfig, prefix: str = ""):
 def plot_confusion_matrix(
     cm: np.ndarray,
     config: IDMConfig,
-    save_path: Optional[str] = None,
+    save_path: str= "heatmap",
     normalize: bool = True
 ):
     """
