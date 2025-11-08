@@ -186,6 +186,33 @@ python example_inference.py \
     --benchmark
 ```
 
+### 4. Visualize Predictions on Video
+
+```bash
+# Visualize predictions on a video file
+python visualize_predictions.py \
+    --model_path checkpoints/idm_best.pth \
+    --video_path input_video.mp4 \
+    --output_path predictions_visualization.mp4
+```
+
+This creates a video showing:
+- Original video frames (top)
+- Predicted control state with confidence (bottom panel)
+- Probability distribution bars for all states
+
+For testing with fake data:
+```bash
+# First, create a video from fake data frames
+python create_test_video.py --data_dir fake_data/test --output test_video.mp4
+
+# Then visualize predictions
+python visualize_predictions.py \
+    --model_path checkpoints/idm_best.pth \
+    --video_path test_video.mp4 \
+    --output_path predictions_visualization.mp4
+```
+
 ## Usage Examples
 
 ### Training from Python
@@ -366,6 +393,8 @@ inverse_dynamics_model/
 
 train.py                     # Training script
 example_inference.py         # Inference example
+visualize_predictions.py     # Visualize predictions on video
+create_test_video.py         # Create test video from frames
 generate_fake_data.py        # Generate synthetic data for testing
 quick_test.py                # Quick pipeline test
 test_installation.py         # Installation verification

@@ -57,6 +57,7 @@ test_fake_data/
 *.mp4
 *.avi
 *.mov
+*.mkv
 
 # Checkpoints and logs
 checkpoints/
