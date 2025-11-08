@@ -60,6 +60,42 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
 ## Quick Start
 
+### 0. Quick Test (Optional)
+
+Before preparing real data, you can test the entire pipeline with synthetic data:
+
+```bash
+# Generate small synthetic dataset and run a quick training test
+python quick_test.py
+```
+
+This will:
+1. Generate 100 train, 30 val, 30 test synthetic frames
+2. Train the model for 3 epochs
+3. Run inference
+4. Verify everything works (~2-5 minutes)
+
+Or generate fake data manually:
+
+```bash
+# Generate synthetic data for testing (customizable sizes)
+python generate_fake_data.py \
+    --output_dir fake_data \
+    --num_train 200 \
+    --num_val 50 \
+    --num_test 50
+
+# Then train on fake data
+python train.py \
+    --train_dir fake_data/train \
+    --val_dir fake_data/val \
+    --test_dir fake_data/test \
+    --batch_size 16 \
+    --num_epochs 10
+```
+
+**Note**: Synthetic data uses colored frames corresponding to states (green=forward, red=backward, etc.) to help verify the pipeline, but won't achieve high accuracy since it's not real RC car footage.
+
 ### 1. Prepare Your Data
 
 #### Option A: From Video File
@@ -330,6 +366,9 @@ inverse_dynamics_model/
 
 train.py                     # Training script
 example_inference.py         # Inference example
+generate_fake_data.py        # Generate synthetic data for testing
+quick_test.py                # Quick pipeline test
+test_installation.py         # Installation verification
 requirements.txt             # Dependencies
 README.md                    # This file
 ```
@@ -359,7 +398,23 @@ python train.py --batch_size 16 ...
 
 ## Testing
 
-Run validation tests:
+### Quick Test
+
+Test the entire pipeline with synthetic data:
+
+```bash
+python quick_test.py
+```
+
+### Installation Test
+
+Verify installation and imports:
+
+```bash
+python test_installation.py
+```
+
+### Manual Tests
 
 ```bash
 # Test data loading
@@ -367,6 +422,21 @@ python -c "from inverse_dynamics_model.dataset import RCCarInverseDynamicsDatase
 
 # Test model forward pass
 python -c "from inverse_dynamics_model import InverseDynamicsModel, IDMConfig; import torch; model = InverseDynamicsModel(IDMConfig()); x = torch.randn(1, 6, 224, 224); y = model(x); print(f'Output shape: {y.shape}')"
+```
+
+### Generate Synthetic Data
+
+For testing without real data:
+
+```bash
+# Small dataset (quick test)
+python generate_fake_data.py --num_train 100 --num_val 30 --num_test 30
+
+# Larger dataset (better for testing training dynamics)
+python generate_fake_data.py --num_train 1000 --num_val 200 --num_test 200
+
+# Use random noise instead of colored frames
+python generate_fake_data.py --random_noise
 ```
 
 ## Citation
