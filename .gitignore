@@ -27,12 +27,15 @@ ENV/
 .venv
 
 # IDEs
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+
+# Keep .vscode/ configuration for easy IDE setup
+# (uncomment line below if you want to ignore it)
+# .vscode/
 
 # Jupyter Notebook
 .ipynb_checkpoints
