@@ -3,7 +3,11 @@
 Training script for Inverse Dynamics Model.
 
 Usage:
+    # Train V1 (ResNet-18, 2 frames)
     python train.py --train_dir data/train --val_dir data/val --test_dir data/test
+
+    # Train V2 (MobileNetV2, 4 frames)
+    python train.py --model_version v2 --train_dir data/train --val_dir data/val --test_dir data/test
 
 For more options:
     python train.py --help
@@ -13,17 +17,20 @@ import argparse
 import os
 from pathlib import Path
 
-from inverse_dynamics_model.config import IDMConfig
-from inverse_dynamics_model.model import InverseDynamicsModel
-from inverse_dynamics_model.dataset import create_dataloaders
-from inverse_dynamics_model.trainer import InverseDynamicsTrainer
-from inverse_dynamics_model.utils import set_random_seed, get_device
-
 
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Train Inverse Dynamics Model for RC Car Control Prediction"
+    )
+
+    # Model version selection
+    parser.add_argument(
+        "--model_version",
+        type=str,
+        default="v1",
+        choices=["v1", "v2"],
+        help="Model version: v1 (ResNet-18, 2 frames) or v2 (MobileNetV2, 4 frames) (default: v1)"
     )
 
     # Data arguments
@@ -50,8 +57,8 @@ def parse_args():
     parser.add_argument(
         "--num_stacked_frames",
         type=int,
-        default=2,
-        help="Number of consecutive frames to stack (default: 2)"
+        default=None,
+        help="Number of consecutive frames to stack (default: 2 for v1, 4 for v2)"
     )
     parser.add_argument(
         "--use_grayscale",
@@ -61,7 +68,7 @@ def parse_args():
     parser.add_argument(
         "--no_pretrained",
         action="store_true",
-        help="Don't use pretrained ResNet-18 weights"
+        help="Don't use pretrained weights (ResNet-18 for v1, MobileNetV2 for v2)"
     )
 
     # Training arguments
@@ -172,13 +179,34 @@ def main():
     """Main training function."""
     args = parse_args()
 
+    # Import the correct version based on argument
+    if args.model_version == "v2":
+        from inverse_dynamics_model_v2.config import IDMConfig
+        from inverse_dynamics_model_v2.model import InverseDynamicsModel
+        from inverse_dynamics_model_v2.dataset import create_dataloaders
+        from inverse_dynamics_model_v2.trainer import InverseDynamicsTrainer
+        from inverse_dynamics_model_v2.utils import set_random_seed, get_device
+        default_frames = 4
+        model_name = "Inverse Dynamics Model V2 (MobileNetV2, 4 frames)"
+    else:
+        from inverse_dynamics_model.config import IDMConfig
+        from inverse_dynamics_model.model import InverseDynamicsModel
+        from inverse_dynamics_model.dataset import create_dataloaders
+        from inverse_dynamics_model.trainer import InverseDynamicsTrainer
+        from inverse_dynamics_model.utils import set_random_seed, get_device
+        default_frames = 2
+        model_name = "Inverse Dynamics Model V1 (ResNet-18, 2 frames)"
+
+    # Set default num_stacked_frames if not provided
+    num_stacked_frames = args.num_stacked_frames if args.num_stacked_frames is not None else default_frames
+
     print(f"\n{'='*70}")
-    print("Inverse Dynamics Model - Training")
+    print(f"Training: {model_name}")
     print(f"{'='*70}\n")
 
     # Create config from arguments
     config = IDMConfig(
-        num_stacked_frames=args.num_stacked_frames,
+        num_stacked_frames=num_stacked_frames,
         use_grayscale=args.use_grayscale,
         batch_size=args.batch_size,
         num_epochs=args.num_epochs,
