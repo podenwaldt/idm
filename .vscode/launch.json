@@ -156,6 +156,19 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "Visualize Labels",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/visualize_labels.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--data_path", "data/train",
+                "--output_path", "labels_visualization.mp4"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
