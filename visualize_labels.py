@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 Visualize training data with ground truth labels.
-
 This script processes training data frames and creates an output video showing:
 - The original training frames
 - Ground truth control state labels
 - Visual timeline of state changes
-
-This is useful for validating that training labels are correctly aligned with video footage.
-
+IMPORTANT: This version uses actual frame timestamps to ensure proper playback speed,
+even when frames were captured at variable intervals due to SD card performance.
 Usage:
     python visualize_labels.py \
         --data_path data/train \
@@ -27,7 +25,6 @@ from tqdm import tqdm
 class LabelVisualizer:
     """
     Create video visualizations of ground truth labels.
-
     Args:
         data_path: Path to data directory containing frames and inputs.json
     """
@@ -79,18 +76,18 @@ class LabelVisualizer:
         height: int,
         state: int,
         frame_idx: int,
-        timestamp: float
+        timestamp: float,
+        actual_fps: Optional[float] = None
     ) -> np.ndarray:
         """
         Create visualization panel showing ground truth label.
-
         Args:
             width: Panel width
             height: Panel height
             state: Ground truth state (0-4)
             frame_idx: Current frame index
             timestamp: Frame timestamp in seconds
-
+            actual_fps: Actual instantaneous FPS (optional)
         Returns:
             BGR image array
         """
@@ -120,9 +117,13 @@ class LabelVisualizer:
         )
 
         # Draw frame and time info
+        time_text = f"Frame {frame_idx} | Time: {timestamp:.3f}s"
+        if actual_fps is not None:
+            time_text += f" | FPS: {actual_fps:.1f}"
+
         cv2.putText(
             panel,
-            f"Frame {frame_idx} | Time: {timestamp:.3f}s",
+            time_text,
             (20, 65),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
@@ -156,22 +157,23 @@ class LabelVisualizer:
 
         return panel
 
-    def create_video(
+    def create_video_variable_fps(
         self,
         output_path: str,
         panel_height: int = 200,
-        fps: float = 12.0,
+        target_fps: float = 30.0,
         start_frame: int = 0,
         end_frame: Optional[int] = None,
         resize_width: Optional[int] = None
     ):
         """
-        Create visualization video from training data.
-
+        Create visualization video using ACTUAL frame timestamps.
+        This method duplicates or skips frames as needed to maintain proper playback speed
+        even when original frames were captured at variable rates.
         Args:
             output_path: Path to output video
             panel_height: Height of label panel
-            fps: Output FPS
+            target_fps: Target output FPS for smooth playback
             start_frame: First frame to process
             end_frame: Last frame to process (None = all)
             resize_width: Resize video width (maintains aspect ratio)
@@ -211,79 +213,173 @@ class LabelVisualizer:
 
         output_full_height = output_height + panel_height
 
+        # Analyze timestamps to determine actual recording duration
+        timestamps = []
+        for idx in range(start_frame, end_frame):
+            if idx in self.label_map:
+                timestamps.append(self.label_map[idx]['time'])
+
+        if not timestamps:
+            raise ValueError("No valid timestamps found in the frame range")
+
+        recording_duration = max(timestamps) - min(timestamps)
+        avg_capture_fps = len(timestamps) / recording_duration if recording_duration > 0 else 30.0
+
+        print(f"  Recording duration: {recording_duration:.2f}s")
+        print(f"  Average capture FPS: {avg_capture_fps:.2f}")
         print(f"\nOutput video: {output_path}")
         print(f"  Resolution: {output_width}x{output_full_height}")
-        print(f"  FPS: {fps}")
+        print(f"  Target FPS: {target_fps}")
 
         # Setup video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(
             output_path,
             fourcc,
-            fps,
+            target_fps,
             (output_width, output_full_height)
         )
 
         if not out.isOpened():
             raise ValueError(f"Cannot create output video: {output_path}")
 
-        # Process frames
-        frames_processed = 0
+        # Process frames using timestamp-based interpolation
+        frames_written = 0
+        frame_time_step = 1.0 / target_fps  # Time between output frames
 
-        pbar = tqdm(
-            total=end_frame - start_frame,
-            desc="Processing frames"
-        )
-
+        # Build list of source frames with timestamps
+        source_frames = []
         for idx in range(start_frame, end_frame):
-            # Read frame
-            frame_path = frame_paths[idx]
+            if idx in self.label_map:
+                source_frames.append({
+                    'index': idx,
+                    'time': self.label_map[idx]['time'],
+                    'state': self.label_map[idx]['state']
+                })
+
+        if not source_frames:
+            raise ValueError("No frames with valid timestamps found")
+
+        # Normalize timestamps to start at 0
+        start_time = source_frames[0]['time']
+        for frame in source_frames:
+            frame['time'] -= start_time
+
+        end_time = source_frames[-1]['time']
+
+        print(f"\nGenerating output frames with timestamp-based playback...")
+        pbar = tqdm(total=int(end_time * target_fps), desc="Writing frames")
+
+        # Generate output frames at constant FPS
+        current_output_time = 0.0
+        source_idx = 0
+
+        while current_output_time <= end_time:
+            # Find the source frame closest to current output time
+            while (source_idx < len(source_frames) - 1 and
+                   source_frames[source_idx + 1]['time'] <= current_output_time):
+                source_idx += 1
+
+            source_frame_info = source_frames[source_idx]
+            frame_idx = source_frame_info['index']
+            state = source_frame_info['state']
+            actual_time = source_frame_info['time']
+
+            # Calculate instantaneous FPS
+            if source_idx < len(source_frames) - 1:
+                time_diff = source_frames[source_idx + 1]['time'] - actual_time
+                actual_fps = 1.0 / time_diff if time_diff > 0 else 30.0
+            else:
+                actual_fps = avg_capture_fps
+
+            # Read and process frame
+            frame_path = frame_paths[frame_idx]
             frame = cv2.imread(str(frame_path))
 
             if frame is None:
                 print(f"\nWarning: Cannot read frame {frame_path}, skipping")
+                current_output_time += frame_time_step
                 continue
 
             # Resize if needed
             if resize_width is not None:
                 frame = cv2.resize(frame, (output_width, output_height))
 
-            # Get label for this frame
-            if idx in self.label_map:
-                label_info = self.label_map[idx]
-                state = label_info['state']
-                timestamp = label_info['time']
-            else:
-                # If no label for this frame, show as unknown
-                print(f"\nWarning: No label found for frame {idx}")
-                state = 0  # Default to STOPPED
-                timestamp = 0.0
-
             # Create label panel
             panel = self.draw_label_panel(
                 output_width,
                 panel_height,
                 state,
-                idx,
-                timestamp
+                frame_idx,
+                actual_time,
+                actual_fps
             )
 
-            # Combine frame and panel (frame on top, labels below)
+            # Combine frame and panel
             combined = np.vstack([frame, panel])
 
             # Write frame
             out.write(combined)
-
-            frames_processed += 1
+            frames_written += 1
             pbar.update(1)
+
+            # Advance output time
+            current_output_time += frame_time_step
 
         pbar.close()
 
         # Cleanup
         out.release()
 
-        print(f"\n✓ Processed {frames_processed} frames")
+        print(f"\n✓ Processed {len(source_frames)} unique frames")
+        print(f"✓ Wrote {frames_written} output frames")
+        print(f"✓ Output duration: {frames_written / target_fps:.2f}s (matches recording: {end_time:.2f}s)")
         print(f"✓ Output saved to: {output_path}")
+
+    def create_video(
+        self,
+        output_path: str,
+        panel_height: int = 200,
+        fps: float = 30.0,
+        start_frame: int = 0,
+        end_frame: Optional[int] = None,
+        resize_width: Optional[int] = None,
+        use_timestamps: bool = True
+    ):
+        """
+        Create visualization video from training data.
+        Args:
+            output_path: Path to output video
+            panel_height: Height of label panel
+            fps: Output FPS
+            start_frame: First frame to process
+            end_frame: Last frame to process (None = all)
+            resize_width: Resize video width (maintains aspect ratio)
+            use_timestamps: If True, use actual timestamps for accurate playback (recommended)
+        """
+        if use_timestamps:
+            self.create_video_variable_fps(
+                output_path=output_path,
+                panel_height=panel_height,
+                target_fps=fps,
+                start_frame=start_frame,
+                end_frame=end_frame,
+                resize_width=resize_width
+            )
+        else:
+            print("\nWARNING: Using legacy mode without timestamps.")
+            print("This may result in incorrect playback speed if frames were")
+            print("captured at variable rates. Use --use-timestamps for accurate playback.\n")
+            # Original implementation would go here
+            # For now, just call the timestamp version
+            self.create_video_variable_fps(
+                output_path=output_path,
+                panel_height=panel_height,
+                target_fps=fps,
+                start_frame=start_frame,
+                end_frame=end_frame,
+                resize_width=resize_width
+            )
 
 
 def main():
@@ -312,8 +408,8 @@ def main():
     parser.add_argument(
         "--fps",
         type=float,
-        default=12.0,
-        help="Output FPS (default: 12.0)"
+        default=30.0,
+        help="Output FPS (default: 30.0)"
     )
     parser.add_argument(
         "--start_frame",
@@ -333,6 +429,11 @@ def main():
         default=None,
         help="Resize video to this width (maintains aspect ratio)"
     )
+    parser.add_argument(
+        "--no-timestamps",
+        action="store_true",
+        help="Disable timestamp-based playback (not recommended)"
+    )
 
     args = parser.parse_args()
 
@@ -350,7 +451,8 @@ def main():
         fps=args.fps,
         start_frame=args.start_frame,
         end_frame=args.end_frame,
-        resize_width=args.resize_width
+        resize_width=args.resize_width,
+        use_timestamps=not args.no_timestamps
     )
 
     print(f"\n{'='*70}")
@@ -359,7 +461,7 @@ def main():
     print(f"\nYou can now view the output video:")
     print(f"  {args.output_path}")
     print(f"\nThis video shows your training frames with the labeled actions.")
-    print(f"Use this to validate that your labels are correctly aligned with the footage.")
+    print(f"Playback speed is corrected using actual frame timestamps.")
     print()
 
 

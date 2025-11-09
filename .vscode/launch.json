@@ -78,7 +78,8 @@
                 "--val_dir", "data/val",
                 "--test_dir", "data/test",
                 "--batch_size", "32",
-                "--num_epochs", "50"
+                "--num_epochs", "20",
+                "--num_workers", "0"
             ],
             "cwd": "${workspaceFolder}"
         },
@@ -148,9 +149,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--model_path", "test_checkpoints/idm_final.pth",
+                "--model_path", "checkpoints/idm_final.pth",
                 "--video_path", "test_video.mp4",
-                "--output_path", "test_predictions_visualization.mp4",
+                "--output_path", "predictions_visualization.mp4",
                 "--resize_width", "640"
             ],
             "cwd": "${workspaceFolder}"
