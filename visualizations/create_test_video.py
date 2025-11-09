@@ -6,7 +6,7 @@ This script takes the generated fake data frames and creates a video file
 that can be used to test the visualization script.
 
 Usage:
-    python create_test_video.py --data_dir fake_data/test --output test_video.mp4
+    python visualizations/create_test_video.py --data_dir data/test --output test_video.mp4
 """
 
 import argparse
