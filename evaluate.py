@@ -6,8 +6,11 @@ This script loads a trained model from a .pth checkpoint file and evaluates it
 on a test dataset, generating comprehensive metrics and visualizations.
 
 Usage:
-    python evaluate.py --checkpoint checkpoints/idm_final.pth --test_dir data/test
-    python evaluate.py --checkpoint checkpoints/idm_epoch_10_best.pth --test_dir data/test --output_dir results
+    # Evaluate V1 model
+    python evaluate.py --model_version v1 --checkpoint checkpoints/idm_final.pth --test_dir data/test
+
+    # Evaluate V2 model
+    python evaluate.py --model_version v2 --checkpoint checkpoints_v2/idm_final.pth --test_dir data/test
 
 For more options:
     python evaluate.py --help
@@ -23,23 +26,20 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from inverse_dynamics_model.config import IDMConfig
-from inverse_dynamics_model.model import InverseDynamicsModel
-from inverse_dynamics_model.dataset import RCCarInverseDynamicsDataset
-from inverse_dynamics_model.utils import (
-    compute_metrics,
-    print_metrics,
-    plot_confusion_matrix,
-    plot_per_class_performance,
-    get_device,
-    set_random_seed
-)
-
 
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Evaluate Inverse Dynamics Model from checkpoint"
+    )
+
+    # Model version selection
+    parser.add_argument(
+        "--model_version",
+        type=str,
+        default="v1",
+        choices=["v1", "v2"],
+        help="Model version: v1 (ResNet-18, 2 frames) or v2 (MobileNetV2, 4 frames) (default: v1)"
     )
 
     # Required arguments
@@ -92,13 +92,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_checkpoint_and_config(checkpoint_path: str, device: torch.device) -> tuple:
+def load_checkpoint_and_config(checkpoint_path: str, device: torch.device, IDMConfig) -> tuple:
     """
     Load checkpoint and extract model configuration.
 
     Args:
         checkpoint_path: Path to .pth checkpoint file
         device: Device to load checkpoint to
+        IDMConfig: The IDMConfig class to use (v1 or v2)
 
     Returns:
         Tuple of (checkpoint_dict, config)
@@ -145,7 +146,7 @@ def load_checkpoint_and_config(checkpoint_path: str, device: torch.device) -> tu
     return checkpoint, config
 
 
-def create_model_and_load_weights(checkpoint: dict, config: IDMConfig, device: torch.device) -> InverseDynamicsModel:
+def create_model_and_load_weights(checkpoint: dict, config, device: torch.device, InverseDynamicsModel):
     """
     Create model instance and load weights from checkpoint.
 
@@ -175,7 +176,7 @@ def create_model_and_load_weights(checkpoint: dict, config: IDMConfig, device: t
     return model
 
 
-def create_test_dataloader(test_dir: str, config: IDMConfig, batch_size: int, num_workers: int) -> DataLoader:
+def create_test_dataloader(test_dir: str, config, batch_size: int, num_workers: int, RCCarInverseDynamicsDataset) -> DataLoader:
     """
     Create test dataloader.
 
@@ -204,11 +205,12 @@ def create_test_dataloader(test_dir: str, config: IDMConfig, batch_size: int, nu
 
 
 def evaluate_model(
-    model: InverseDynamicsModel,
+    model,
     test_loader: DataLoader,
-    config: IDMConfig,
+    config,
     device: torch.device,
-    output_dir: str
+    output_dir: str,
+    utils_module
 ) -> Dict:
     """
     Evaluate model on test set and generate visualizations.
@@ -244,23 +246,23 @@ def evaluate_model(
     all_targets = np.array(all_targets)
 
     # Compute metrics
-    metrics = compute_metrics(all_predictions, all_targets, config)
+    metrics = utils_module.compute_metrics(all_predictions, all_targets, config)
 
     # Print metrics
-    print_metrics(metrics, config, prefix="Test")
+    utils_module.print_metrics(metrics, config, prefix="Test")
 
     # Save visualizations
     os.makedirs(output_dir, exist_ok=True)
 
     # Confusion matrix
-    plot_confusion_matrix(
+    utils_module.plot_confusion_matrix(
         metrics['confusion_matrix'],
         config,
         save_path=os.path.join(output_dir, 'confusion_matrix.png')
     )
 
     # Per-class performance
-    plot_per_class_performance(
+    utils_module.plot_per_class_performance(
         metrics,
         config,
         save_path=os.path.join(output_dir, 'per_class_performance.png')
@@ -304,12 +306,26 @@ def main():
     """Main evaluation function."""
     args = parse_args()
 
+    # Import the correct version based on argument
+    if args.model_version == "v2":
+        from inverse_dynamics_model_v2.config import IDMConfig
+        from inverse_dynamics_model_v2.model import InverseDynamicsModel
+        from inverse_dynamics_model_v2.dataset import RCCarInverseDynamicsDataset
+        import inverse_dynamics_model_v2.utils as utils_module
+        model_name = "Inverse Dynamics Model V2 (MobileNetV2, 4 frames)"
+    else:
+        from inverse_dynamics_model.config import IDMConfig
+        from inverse_dynamics_model.model import InverseDynamicsModel
+        from inverse_dynamics_model.dataset import RCCarInverseDynamicsDataset
+        import inverse_dynamics_model.utils as utils_module
+        model_name = "Inverse Dynamics Model V1 (ResNet-18, 2 frames)"
+
     print(f"\n{'='*70}")
-    print("Inverse Dynamics Model - Standalone Evaluation")
+    print(f"Standalone Evaluation: {model_name}")
     print(f"{'='*70}\n")
 
     # Set random seed
-    set_random_seed(args.random_seed)
+    utils_module.set_random_seed(args.random_seed)
 
     # Get device
     if args.device:
@@ -324,21 +340,22 @@ def main():
         print("Using CPU\n")
 
     # Load checkpoint and config
-    checkpoint, config = load_checkpoint_and_config(args.checkpoint, device)
+    checkpoint, config = load_checkpoint_and_config(args.checkpoint, device, IDMConfig)
 
     # Override batch_size and num_workers from command line
     config.batch_size = args.batch_size
     config.num_workers = args.num_workers
 
     # Create model and load weights
-    model = create_model_and_load_weights(checkpoint, config, device)
+    model = create_model_and_load_weights(checkpoint, config, device, InverseDynamicsModel)
 
     # Create test dataloader
     test_loader = create_test_dataloader(
         args.test_dir,
         config,
         args.batch_size,
-        args.num_workers
+        args.num_workers,
+        RCCarInverseDynamicsDataset
     )
 
     # Evaluate
@@ -347,7 +364,8 @@ def main():
         test_loader,
         config,
         device,
-        args.output_dir
+        args.output_dir,
+        utils_module
     )
 
     # Final summary
