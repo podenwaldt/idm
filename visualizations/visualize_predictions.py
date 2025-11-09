@@ -9,9 +9,9 @@ and creates an output video showing:
 - Probability distribution over all states
 
 Usage:
-    python visualize_predictions.py \
-        --model_path checkpoints/idm_best.pth \
-        --video_path input_video.mp4 \
+    python visualizations/visualize_predictions.py \
+        --model_path checkpoints/idm_final.pth \
+        --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4
 """
 
