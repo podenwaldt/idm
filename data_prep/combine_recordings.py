@@ -7,8 +7,10 @@ Each recording run should have:
 - inputs.json: frame labels with timestamps and states
 
 Usage:
-    python combine_recordings.py recording1/ recording2/ recording3/ --output data/train/
-    python combine_recordings.py recording_* --output data/train/
+    python data_prep/combine_recordings.py recording1/ recording2/ recording3/ --output data/train/
+    python data_prep/combine_recordings.py recordings/train/recording_* --output data/train/
+    python data_prep/combine_recordings.py recordings/val/recording_* --output data/val/
+    python data_prep/combine_recordings.py recordings/test/recording_* --output data/test/
 """
 
 import argparse
