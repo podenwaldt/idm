@@ -50,8 +50,8 @@ ENV/
 data/
 datasets/
 fake_data/
-*.jpg
-*.jpeg
+// *.jpg
+// *.jpeg
 *.png
 // *.mp4
 *.avi
