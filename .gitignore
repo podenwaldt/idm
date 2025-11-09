@@ -52,7 +52,7 @@ fake_data/
 // *.jpg
 // *.jpeg
 *.png
-// *.mp4
+*.mp4
 *.avi
 *.mov
 *.mkv

@@ -160,7 +160,7 @@
             "name": "Visualize Labels",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/visualize_labels.py",
+            "program": "${workspaceFolder}/visualizations/visualize_labels.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
