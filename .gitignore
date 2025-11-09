@@ -68,9 +68,9 @@ outputs/
 predictions/
 
 # Testing
+test_fake_data/
 test_checkpoints/
 test_evaluation/
-test_fake_data/
 
 # Temporary files
 tmp/
