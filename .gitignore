@@ -47,7 +47,6 @@ ENV/
 *.ckpt
 
 # Data
-data/
 datasets/
 fake_data/
 // *.jpg
