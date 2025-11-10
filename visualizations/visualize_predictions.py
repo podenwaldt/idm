@@ -8,9 +8,11 @@ and creates an output video showing:
 - Predicted control state and confidence
 - Probability distribution over all states
 
+Supports models with 2, 3, or 4 stacked frames (automatically detected from checkpoint).
+
 Usage:
     python visualizations/visualize_predictions.py \
-        --model_path checkpoints/idm_final.pth \
+        --model_path idm_final.pth \
         --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4
 """
@@ -20,12 +22,13 @@ import cv2
 import numpy as np
 from pathlib import Path
 from typing import Tuple, List, Optional
+from collections import deque
 import torch
 from PIL import Image
 from tqdm import tqdm
 
-from inverse_dynamics_model.inference import InverseDynamicsPredictor
-from inverse_dynamics_model.config import IDMConfig
+from inverse_dynamics_model_v2.inference import InverseDynamicsPredictor
+from inverse_dynamics_model_v2.config import IDMConfig
 
 
 class PredictionVisualizer:
@@ -250,7 +253,9 @@ class PredictionVisualizer:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
         # Process frames
-        prev_frame = None
+        # Use a deque to maintain a buffer of frames based on model requirements
+        num_required_frames = self.config.num_stacked_frames
+        frame_buffer = deque(maxlen=num_required_frames)
         frames_processed = 0
 
         pbar = tqdm(
@@ -267,13 +272,16 @@ class PredictionVisualizer:
             if resize_width is not None:
                 frame = cv2.resize(frame, (output_width, output_height))
 
-            # For the first frame, we don't have a prediction yet
-            if prev_frame is None:
+            # Add frame to buffer
+            frame_buffer.append(frame.copy())
+
+            # Wait until we have enough frames for prediction
+            if len(frame_buffer) < num_required_frames:
                 # Create a "waiting" panel
                 panel = np.zeros((panel_height, output_width, 3), dtype=np.uint8)
                 cv2.putText(
                     panel,
-                    "Waiting for second frame...",
+                    f"Collecting frames... ({len(frame_buffer)}/{num_required_frames})",
                     (20, panel_height // 2),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.8,
@@ -281,17 +289,17 @@ class PredictionVisualizer:
                     2
                 )
             else:
-                # Run inference on previous and current frame
-                # Convert BGR (OpenCV) to RGB (PIL/model)
-                prev_rgb = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2RGB)
-                curr_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                prev_pil = Image.fromarray(prev_rgb)
-                curr_pil = Image.fromarray(curr_rgb)
+                # Run inference on the buffered frames
+                # Convert BGR (OpenCV) to RGB (PIL/model) for all frames in buffer
+                frame_pils = []
+                for buffered_frame in frame_buffer:
+                    rgb = cv2.cvtColor(buffered_frame, cv2.COLOR_BGR2RGB)
+                    pil = Image.fromarray(rgb)
+                    frame_pils.append(pil)
 
                 # Predict
                 state, probs = self.predictor.predict(
-                    [prev_pil, curr_pil],
+                    frame_pils,
                     return_probabilities=True
                 )
 
@@ -310,7 +318,6 @@ class PredictionVisualizer:
             # Write frame
             out.write(combined)
 
-            prev_frame = frame.copy()
             frames_processed += 1
             pbar.update(1)
 
