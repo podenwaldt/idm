@@ -263,13 +263,20 @@ def main():
     # Train
     history = trainer.train()
 
+    # Reload best model weights before saving final model
+    if trainer.best_checkpoint_path is not None and os.path.exists(trainer.best_checkpoint_path):
+        print(f"\nReloading best model from: {trainer.best_checkpoint_path}")
+        trainer.load_model(trainer.best_checkpoint_path)
+    else:
+        print("\nWarning: No best checkpoint found. Saving final model with last epoch weights.")
+
     # Evaluate on test set if available
     if test_loader is not None:
         print("\nEvaluating on test set...")
         os.makedirs(args.eval_output_dir, exist_ok=True)
         test_metrics = trainer.evaluate(test_loader, save_dir=args.eval_output_dir)
 
-    # Save final model
+    # Save final model (now contains best weights)
     final_model_path = os.path.join(config.checkpoint_dir, "idm_final.pth")
     trainer.save_model(final_model_path)
 

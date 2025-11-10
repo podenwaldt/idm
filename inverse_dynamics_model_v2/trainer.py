@@ -80,6 +80,7 @@ class InverseDynamicsTrainer:
         self.best_val_loss = float('inf')
         self.best_val_accuracy = 0.0
         self.epochs_without_improvement = 0
+        self.best_checkpoint_path = None  # Track path to best checkpoint
 
         # Create checkpoint directory
         os.makedirs(config.checkpoint_dir, exist_ok=True)
@@ -277,6 +278,8 @@ class InverseDynamicsTrainer:
                         checkpoint_path,
                         is_best=True
                     )
+                    # Track the best checkpoint path
+                    self.best_checkpoint_path = checkpoint_path.replace('.pth', '_best.pth')
             else:
                 # Save every N epochs or if best
                 if (epoch + 1) % self.config.save_every_n_epochs == 0 or is_best:
@@ -294,6 +297,9 @@ class InverseDynamicsTrainer:
                         checkpoint_path,
                         is_best=is_best
                     )
+                    # Track the best checkpoint path when it's the best
+                    if is_best:
+                        self.best_checkpoint_path = checkpoint_path.replace('.pth', '_best.pth')
 
             # Early stopping
             if val_accuracy > self.best_val_accuracy:
