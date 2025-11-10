@@ -13,6 +13,7 @@ Version 2 of the Inverse Dynamics Model introduces significant improvements over
 
 2. **4-Frame Temporal Context**
    - Uses 4 consecutive frames (t-1, t, t+1, t+2) instead of 2
+   - Predicts action at time t using both past and future context (true inverse dynamics)
    - Provides richer temporal information for control prediction
    - Input shape: (12, 224, 224) = 4 frames × 3 RGB channels
 
