@@ -15,6 +15,11 @@ Usage:
         --model_path idm_final.pth \
         --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4
+
+    python visualizations/visualize_predictions.py \
+        --model_path idm_MN_2f.pth \
+        --video_path test_video.mp4 \
+        --output_path predictions_visualization_2f.mp4
 """
 
 import argparse

@@ -34,7 +34,7 @@ class InverseDynamicsPredictor:
             self.device = torch.device(device)
 
         # Load checkpoint
-        checkpoint = torch.load(model_path, map_location=self.device)
+        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
 
         # Reconstruct config from checkpoint
         config_dict = checkpoint.get('config', {})

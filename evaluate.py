@@ -108,7 +108,7 @@ def load_checkpoint_and_config(checkpoint_path: str, device: torch.device, IDMCo
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     print(f"Loading checkpoint from {checkpoint_path}...")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Extract config from checkpoint
     if 'config' not in checkpoint:
