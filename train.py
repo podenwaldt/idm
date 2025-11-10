@@ -121,7 +121,7 @@ def parse_args():
     parser.add_argument(
         "--best_model_metric",
         type=str,
-        default="accuracy",
+        default="both",
         choices=["accuracy", "loss", "both"],
         help="Metric to use for determining best model: 'accuracy', 'loss', or 'both' (default: accuracy)"
     )
