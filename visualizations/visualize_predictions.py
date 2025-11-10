@@ -26,6 +26,13 @@ Usage:
         --output_path predictions_visualization.mp4 \
         --num_stacked_frames 2 \
         --image_size 224 224
+
+    python visualizations/visualize_predictions.py \
+        --model_path idm_final_MN_3F_V2.pth \
+        --model_version v2 \
+        --video_path recordings/demo/944Track.mp4\
+        --output_path predictions_visualization.mp4 \
+        --num_stacked_frames 3
 """
 
 import argparse
