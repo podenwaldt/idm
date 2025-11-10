@@ -155,10 +155,6 @@ class RCCarInverseDynamicsDataset(Dataset):
                 contrast=self.config.color_jitter_contrast,
                 saturation=self.config.color_jitter_saturation,
             ))
-            # Random rotation
-            transform_list.append(transforms.RandomRotation(
-                degrees=self.config.random_rotation_degrees
-            ))
 
         # Convert to tensor
         transform_list.append(transforms.ToTensor())
@@ -191,37 +187,6 @@ class RCCarInverseDynamicsDataset(Dataset):
 
         return img
 
-    def _apply_horizontal_flip_with_state_swap(
-        self,
-        frames: List[Image.Image],
-        state: int
-    ) -> Tuple[List[Image.Image], int]:
-        """
-        Apply random horizontal flip to frames and swap left/right states.
-
-        When flipping horizontally:
-        - ROTATE_LEFT (3) becomes ROTATE_RIGHT (4)
-        - ROTATE_RIGHT (4) becomes ROTATE_LEFT (3)
-        - Other states remain unchanged
-
-        Args:
-            frames: List of PIL Images
-            state: Control state
-
-        Returns:
-            Tuple of (flipped frames, updated state)
-        """
-        if torch.rand(1).item() < self.config.random_flip_prob:
-            # Flip all frames
-            frames = [transforms.functional.hflip(frame) for frame in frames]
-
-            # Swap left/right states
-            if state == self.config.STATE_ROTATE_LEFT:
-                state = self.config.STATE_ROTATE_RIGHT
-            elif state == self.config.STATE_ROTATE_RIGHT:
-                state = self.config.STATE_ROTATE_LEFT
-
-        return frames, state
 
     def __len__(self) -> int:
         """Return total number of samples."""
@@ -246,10 +211,6 @@ class RCCarInverseDynamicsDataset(Dataset):
 
         # Load frames
         frames = [self._load_frame(frame_idx) for frame_idx in frame_indices]
-
-        # Apply horizontal flip with state swapping (training only)
-        if self.split == "train" and self.config.use_augmentation:
-            frames, state = self._apply_horizontal_flip_with_state_swap(frames, state)
 
         # Apply transforms to each frame
         transformed_frames = [self.transform(frame) for frame in frames]

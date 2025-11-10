@@ -121,7 +121,7 @@ def parse_args():
 
     # Data Augmentation
     parser.add_argument(
-        "--no_augmentation",
+        "--use_augmentation",
         action="store_true",
         help="Disable data augmentation"
     )
@@ -215,7 +215,7 @@ def main():
         optimizer=args.optimizer,
         use_scheduler=not args.no_scheduler,
         early_stopping_patience=args.early_stopping_patience,
-        use_augmentation=not args.no_augmentation,
+        use_augmentation=args.use_augmentation,
         checkpoint_dir=args.checkpoint_dir,
         save_every_n_epochs=args.save_every_n_epochs,
         save_best_only=args.save_best_only,
