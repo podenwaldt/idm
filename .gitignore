@@ -42,7 +42,7 @@ ENV/
 *.ipynb
 
 # PyTorch
-*.pth
+// *.pth
 *.pt
 *.ckpt
 
