@@ -10,7 +10,8 @@ Usage:
     python evaluate.py --model_version v1 --checkpoint checkpoints/idm_final.pth --test_dir data/test
 
     # Evaluate V2 model
-    python evaluate.py --model_version v2 --checkpoint checkpoints_v2/idm_final.pth --test_dir data/test
+    python evaluate.py --model_version v2 --checkpoint idm_final_MN_3F_V2.pth --test_dir data/test
+    python evaluate.py --model_version v2 --checkpoint idm_final_MN_3F_V2.pth --test_dir recordings/demo/recording_132278
 
 For more options:
     python evaluate.py --help
