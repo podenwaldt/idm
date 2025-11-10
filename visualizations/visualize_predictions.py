@@ -11,15 +11,19 @@ and creates an output video showing:
 Supports models with 2, 3, or 4 stacked frames (automatically detected from checkpoint).
 
 Usage:
+    # With full checkpoint (config included)
     python visualizations/visualize_predictions.py \
         --model_path idm_final.pth \
         --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4
 
+    # With weights-only checkpoint (manual config required)
     python visualizations/visualize_predictions.py \
-        --model_path idm_MN_2f.pth \
+        --model_path idm_final.pth \
         --video_path test_video.mp4 \
-        --output_path predictions_visualization_2f.mp4
+        --output_path predictions_visualization.mp4 \
+        --num_stacked_frames 4 \
+        --image_size 224 224
 """
 
 import argparse
@@ -43,10 +47,26 @@ class PredictionVisualizer:
     Args:
         model_path: Path to trained model checkpoint
         device: Device to run inference on
+        num_stacked_frames: Override number of stacked frames (for weights-only checkpoints)
+        image_size: Override image size as (height, width) tuple (for weights-only checkpoints)
+        use_grayscale: Override grayscale setting (for weights-only checkpoints)
     """
 
-    def __init__(self, model_path: str, device: Optional[str] = None):
-        self.predictor = InverseDynamicsPredictor(model_path, device=device)
+    def __init__(
+        self,
+        model_path: str,
+        device: Optional[str] = None,
+        num_stacked_frames: Optional[int] = None,
+        image_size: Optional[Tuple[int, int]] = None,
+        use_grayscale: Optional[bool] = None
+    ):
+        self.predictor = InverseDynamicsPredictor(
+            model_path,
+            device=device,
+            num_stacked_frames=num_stacked_frames,
+            image_size=image_size,
+            use_grayscale=use_grayscale
+        )
         self.config = self.predictor.config
 
         # Colors for each state (BGR format for OpenCV)
@@ -439,15 +459,43 @@ def main():
         choices=["cuda", "cpu"],
         help="Device to use (default: auto-detect)"
     )
+    parser.add_argument(
+        "--num_stacked_frames",
+        type=int,
+        default=None,
+        help="Number of stacked frames (override for weights-only checkpoints)"
+    )
+    parser.add_argument(
+        "--image_size",
+        type=int,
+        nargs=2,
+        default=None,
+        metavar=("HEIGHT", "WIDTH"),
+        help="Image size as HEIGHT WIDTH (override for weights-only checkpoints)"
+    )
+    parser.add_argument(
+        "--use_grayscale",
+        action="store_true",
+        help="Use grayscale images (override for weights-only checkpoints)"
+    )
 
     args = parser.parse_args()
+
+    # Convert image_size list to tuple if provided
+    image_size = tuple(args.image_size) if args.image_size else None
 
     print(f"\n{'='*70}")
     print("Inverse Dynamics Model - Video Prediction Visualization")
     print(f"{'='*70}\n")
 
     # Create visualizer
-    visualizer = PredictionVisualizer(args.model_path, device=args.device)
+    visualizer = PredictionVisualizer(
+        args.model_path,
+        device=args.device,
+        num_stacked_frames=args.num_stacked_frames,
+        image_size=image_size,
+        use_grayscale=args.use_grayscale if args.use_grayscale else None
+    )
 
     # Process video
     if args.ground_truth:
