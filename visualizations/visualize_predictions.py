@@ -30,9 +30,17 @@ Usage:
     python visualizations/visualize_predictions.py \
         --model_path idm_final_MN_3F_V2.pth \
         --model_version v2 \
-        --video_path recordings/demo/944Track.mp4\
-        --output_path predictions_visualization.mp4 \
+        --video_path recordings/demo/GT.mp4\
+        --output_path visualizations/outputs/demo_preds_GT.mp4 \
         --num_stacked_frames 3
+
+    python visualizations/visualize_predictions.py \
+        --model_path idm_final_MN_3F_V2.pth \
+        --model_version v2 \
+        --video_path recordings/demo/demo_385.mp4\
+        --output_path visualizations/outputs/demo_preds_385.mp4 \
+        --num_stacked_frames 3 \
+        --fps 6
 """
 
 import argparse
