@@ -53,6 +53,7 @@ class IDMConfig:
 
     # Early Stopping
     early_stopping_patience: int = 10
+    best_model_metric: str = "accuracy"  # "accuracy", "loss", or "both"
 
     # Gradient Clipping
     use_gradient_clipping: bool = False
@@ -95,6 +96,8 @@ class IDMConfig:
         assert self.num_epochs > 0, "Number of epochs must be positive"
         assert self.learning_rate > 0, "Learning rate must be positive"
         assert self.mobilenet_width_mult > 0, "MobileNet width multiplier must be positive"
+        assert self.best_model_metric in ["accuracy", "loss", "both"], \
+            "best_model_metric must be 'accuracy', 'loss', or 'both'"
 
     @property
     def input_channels(self) -> int:

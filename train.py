@@ -118,6 +118,13 @@ def parse_args():
         default=10,
         help="Early stopping patience (default: 10)"
     )
+    parser.add_argument(
+        "--best_model_metric",
+        type=str,
+        default="accuracy",
+        choices=["accuracy", "loss", "both"],
+        help="Metric to use for determining best model: 'accuracy', 'loss', or 'both' (default: accuracy)"
+    )
 
     # Data Augmentation
     parser.add_argument(
@@ -215,6 +222,7 @@ def main():
         optimizer=args.optimizer,
         use_scheduler=not args.no_scheduler,
         early_stopping_patience=args.early_stopping_patience,
+        best_model_metric=args.best_model_metric,
         use_augmentation=args.use_augmentation,
         checkpoint_dir=args.checkpoint_dir,
         save_every_n_epochs=args.save_every_n_epochs,
@@ -263,13 +271,20 @@ def main():
     # Train
     history = trainer.train()
 
+    # Reload best model weights before saving final model
+    if trainer.best_checkpoint_path is not None and os.path.exists(trainer.best_checkpoint_path):
+        print(f"\nReloading best model from: {trainer.best_checkpoint_path}")
+        trainer.load_model(trainer.best_checkpoint_path)
+    else:
+        print("\nWarning: No best checkpoint found. Saving final model with last epoch weights.")
+
     # Evaluate on test set if available
     if test_loader is not None:
         print("\nEvaluating on test set...")
         os.makedirs(args.eval_output_dir, exist_ok=True)
         test_metrics = trainer.evaluate(test_loader, save_dir=args.eval_output_dir)
 
-    # Save final model
+    # Save final model (now contains best weights)
     final_model_path = os.path.join(config.checkpoint_dir, "idm_final.pth")
     trainer.save_model(final_model_path)
 
