@@ -22,9 +22,19 @@ class InverseDynamicsPredictor:
     Args:
         model_path: Path to trained model checkpoint (.pth file)
         device: Device to run inference on ('cuda' or 'cpu')
+        num_stacked_frames: Override number of stacked frames (for weights-only checkpoints)
+        image_size: Override image size as (height, width) tuple (for weights-only checkpoints)
+        use_grayscale: Override grayscale setting (for weights-only checkpoints)
     """
 
-    def __init__(self, model_path: str, device: Optional[str] = None):
+    def __init__(
+        self,
+        model_path: str,
+        device: Optional[str] = None,
+        num_stacked_frames: Optional[int] = None,
+        image_size: Optional[Tuple[int, int]] = None,
+        use_grayscale: Optional[bool] = None
+    ):
         self.model_path = model_path
 
         # Determine device
@@ -38,7 +48,12 @@ class InverseDynamicsPredictor:
 
         # Reconstruct config from checkpoint
         config_dict = checkpoint.get('config', {})
-        self.config = self._create_config_from_dict(config_dict)
+        self.config = self._create_config_from_dict(
+            config_dict,
+            num_stacked_frames_override=num_stacked_frames,
+            image_size_override=image_size,
+            use_grayscale_override=use_grayscale
+        )
 
         # Create model
         self.model = InverseDynamicsModel(self.config, pretrained=False)
@@ -54,8 +69,14 @@ class InverseDynamicsPredictor:
         print(f"Input channels: {self.config.input_channels}")
         print(f"Image size: {self.config.image_size}")
 
-    def _create_config_from_dict(self, config_dict: dict) -> IDMConfig:
-        """Create IDMConfig from checkpoint dictionary."""
+    def _create_config_from_dict(
+        self,
+        config_dict: dict,
+        num_stacked_frames_override: Optional[int] = None,
+        image_size_override: Optional[Tuple[int, int]] = None,
+        use_grayscale_override: Optional[bool] = None
+    ) -> IDMConfig:
+        """Create IDMConfig from checkpoint dictionary with optional overrides."""
         config = IDMConfig()
 
         # Override with saved config
@@ -69,6 +90,14 @@ class InverseDynamicsPredictor:
             config.num_classes = config_dict['num_classes']
         if 'dropout_rate' in config_dict:
             config.dropout_rate = config_dict['dropout_rate']
+
+        # Apply manual overrides (takes precedence over checkpoint config)
+        if num_stacked_frames_override is not None:
+            config.num_stacked_frames = num_stacked_frames_override
+        if image_size_override is not None:
+            config.image_size = image_size_override
+        if use_grayscale_override is not None:
+            config.use_grayscale = use_grayscale_override
 
         return config
 
