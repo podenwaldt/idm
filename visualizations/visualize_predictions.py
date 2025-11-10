@@ -11,18 +11,20 @@ and creates an output video showing:
 Supports models with 2, 3, or 4 stacked frames (automatically detected from checkpoint).
 
 Usage:
-    # With full checkpoint (config included)
+    # V2 model with full checkpoint (config included)
     python visualizations/visualize_predictions.py \
         --model_path idm_final.pth \
+        --model_version v2 \
         --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4
 
-    # With weights-only checkpoint (manual config required)
+    # V1 model with weights-only checkpoint (manual config required)
     python visualizations/visualize_predictions.py \
         --model_path idm_final.pth \
+        --model_version v1 \
         --video_path test_video.mp4 \
         --output_path predictions_visualization.mp4 \
-        --num_stacked_frames 4 \
+        --num_stacked_frames 2 \
         --image_size 224 224
 """
 
@@ -36,8 +38,8 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-from inverse_dynamics_model_v2.inference import InverseDynamicsPredictor
-from inverse_dynamics_model_v2.config import IDMConfig
+import inverse_dynamics_model.inference as idm_v1
+import inverse_dynamics_model_v2.inference as idm_v2
 
 
 class PredictionVisualizer:
@@ -46,6 +48,7 @@ class PredictionVisualizer:
 
     Args:
         model_path: Path to trained model checkpoint
+        model_version: Model version ('v1' or 'v2')
         device: Device to run inference on
         num_stacked_frames: Override number of stacked frames (for weights-only checkpoints)
         image_size: Override image size as (height, width) tuple (for weights-only checkpoints)
@@ -55,12 +58,21 @@ class PredictionVisualizer:
     def __init__(
         self,
         model_path: str,
+        model_version: str = 'v2',
         device: Optional[str] = None,
         num_stacked_frames: Optional[int] = None,
         image_size: Optional[Tuple[int, int]] = None,
         use_grayscale: Optional[bool] = None
     ):
-        self.predictor = InverseDynamicsPredictor(
+        # Select the appropriate predictor class based on model version
+        if model_version == 'v1':
+            predictor_class = idm_v1.InverseDynamicsPredictor
+        elif model_version == 'v2':
+            predictor_class = idm_v2.InverseDynamicsPredictor
+        else:
+            raise ValueError(f"Invalid model_version: {model_version}. Must be 'v1' or 'v2'")
+
+        self.predictor = predictor_class(
             model_path,
             device=device,
             num_stacked_frames=num_stacked_frames,
@@ -405,6 +417,13 @@ def main():
         help="Path to trained model checkpoint (.pth file)"
     )
     parser.add_argument(
+        "--model_version",
+        type=str,
+        default="v2",
+        choices=["v1", "v2"],
+        help="Model version: v1 (ResNet-18, 2 frames) or v2 (MobileNetV2, 4 frames) (default: v2)"
+    )
+    parser.add_argument(
         "--video_path",
         type=str,
         required=True,
@@ -491,6 +510,7 @@ def main():
     # Create visualizer
     visualizer = PredictionVisualizer(
         args.model_path,
+        model_version=args.model_version,
         device=args.device,
         num_stacked_frames=args.num_stacked_frames,
         image_size=image_size,
