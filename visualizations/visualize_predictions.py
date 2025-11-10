@@ -41,6 +41,21 @@ Usage:
         --output_path visualizations/outputs/demo_preds_385.mp4 \
         --num_stacked_frames 3 \
         --fps 6
+
+    python visualizations/visualize_predictions.py \
+        --model_path idm_final_RN_3F.pth \
+        --model_version v1 \
+        --video_path recordings/demo/944Track.mp4\
+        --output_path visualizations/outputs/demo_preds_944_RN.mp4 \
+        --num_stacked_frames 3
+
+    python visualizations/visualize_predictions.py \
+        --model_path idm_final_RN_3F.pth \
+        --model_version v1 \
+        --video_path recordings/demo/GT.mp4\
+        --output_path visualizations/outputs/demo_preds_GT_RN.mp4 \
+        --num_stacked_frames 3
+
 """
 
 import argparse
