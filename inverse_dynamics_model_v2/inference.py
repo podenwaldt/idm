@@ -171,6 +171,10 @@ class InverseDynamicsPredictor:
         """
         Predict control state from a sequence of frames.
 
+        For V2 with 4 frames [frame_0, frame_1, frame_2, frame_3], the model
+        predicts the action at frame_1 (the SECOND frame), which caused the
+        motion observed in frames 2 and 3.
+
         Args:
             frames: List of consecutive frames (num_stacked_frames long)
             return_probabilities: Whether to return probability distribution
