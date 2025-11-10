@@ -118,6 +118,13 @@ def parse_args():
         default=10,
         help="Early stopping patience (default: 10)"
     )
+    parser.add_argument(
+        "--best_model_metric",
+        type=str,
+        default="accuracy",
+        choices=["accuracy", "loss", "both"],
+        help="Metric to use for determining best model: 'accuracy', 'loss', or 'both' (default: accuracy)"
+    )
 
     # Data Augmentation
     parser.add_argument(
@@ -215,6 +222,7 @@ def main():
         optimizer=args.optimizer,
         use_scheduler=not args.no_scheduler,
         early_stopping_patience=args.early_stopping_patience,
+        best_model_metric=args.best_model_metric,
         use_augmentation=args.use_augmentation,
         checkpoint_dir=args.checkpoint_dir,
         save_every_n_epochs=args.save_every_n_epochs,

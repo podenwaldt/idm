@@ -126,6 +126,29 @@ class InverseDynamicsTrainer:
             min_lr=self.config.scheduler_min_lr
         )
 
+    def _is_better_model(self, val_loss: float, val_accuracy: float) -> bool:
+        """
+        Determine if current model is better than the best seen so far.
+
+        Args:
+            val_loss: Current validation loss
+            val_accuracy: Current validation accuracy
+
+        Returns:
+            True if current model is better based on config.best_model_metric
+        """
+        if self.config.best_model_metric == "accuracy":
+            return val_accuracy > self.best_val_accuracy
+        elif self.config.best_model_metric == "loss":
+            return val_loss < self.best_val_loss
+        elif self.config.best_model_metric == "both":
+            # Require both accuracy improvement AND loss improvement (or equal)
+            accuracy_improved = val_accuracy > self.best_val_accuracy
+            loss_improved_or_stable = val_loss <= self.best_val_loss
+            return accuracy_improved and loss_improved_or_stable
+        else:
+            raise ValueError(f"Unknown best_model_metric: {self.config.best_model_metric}")
+
     def train_epoch(self, epoch: int) -> float:
         """
         Train for one epoch.
@@ -260,7 +283,7 @@ class InverseDynamicsTrainer:
             print(f"  Time:       {epoch_time:.2f}s")
 
             # Save checkpoint
-            is_best = val_accuracy > self.best_val_accuracy
+            is_best = self._is_better_model(val_loss, val_accuracy)
 
             if self.config.save_best_only:
                 if is_best:
@@ -302,7 +325,7 @@ class InverseDynamicsTrainer:
                         self.best_checkpoint_path = checkpoint_path.replace('.pth', '_best.pth')
 
             # Early stopping
-            if val_accuracy > self.best_val_accuracy:
+            if is_best:
                 self.best_val_accuracy = val_accuracy
                 self.best_val_loss = val_loss
                 self.epochs_without_improvement = 0
