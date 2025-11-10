@@ -13,7 +13,7 @@ class IDMConfig:
     """Configuration for Inverse Dynamics Model V2 training and inference."""
 
     # Model Architecture
-    num_stacked_frames: int = 4  # V2: Uses 4 frames (t-1, t, t+1, t+2)
+    num_stacked_frames: int = 4  # V2: Uses 4 frames (t-1, t, t+1, t+2), predicts action at t
     use_grayscale: bool = False
     image_size: Tuple[int, int] = (224, 224)
     num_classes: int = 5  # STOPPED, FORWARD, BACKWARD, ROTATE_LEFT, ROTATE_RIGHT

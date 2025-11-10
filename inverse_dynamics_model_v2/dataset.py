@@ -24,7 +24,8 @@ class RCCarInverseDynamicsDataset(Dataset):
     Loads consecutive frames and their corresponding control states from
     a directory structure with inputs.json labels.
 
-    V2 uses 4 consecutive frames (t-1, t, t+1, t+2) for better temporal context.
+    V2 uses 4 consecutive frames (t-1, t, t+1, t+2) and predicts the action
+    at time t, which caused the motion observed in frames t+1 and t+2.
 
     Directory structure:
         data/
@@ -108,7 +109,10 @@ class RCCarInverseDynamicsDataset(Dataset):
         Create samples from consecutive frames.
 
         Each sample consists of num_stacked_frames consecutive frames
-        and the control state of the last frame.
+        and the control state at the second frame (true inverse dynamics).
+
+        For 4 frames [t-1, t, t+1, t+2], we predict the action at time t,
+        which caused the motion observed in frames t+1 and t+2.
 
         Returns:
             List of dicts with 'frames' (list of frame indices) and 'state' (int)
@@ -124,8 +128,9 @@ class RCCarInverseDynamicsDataset(Dataset):
                       for j in range(len(frame_indices) - 1)):
                 continue  # Skip non-consecutive sequences
 
-            # State corresponds to the last frame in the sequence
-            state = self.labels[i + self.num_stacked_frames - 1]["state"]
+            # State corresponds to the second frame in the sequence (time t)
+            # This action causes the motion visible in subsequent frames
+            state = self.labels[i + 1]["state"]
 
             samples.append({
                 "frames": frame_indices,

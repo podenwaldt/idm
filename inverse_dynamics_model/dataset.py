@@ -105,7 +105,10 @@ class RCCarInverseDynamicsDataset(Dataset):
         Create samples from consecutive frames.
 
         Each sample consists of num_stacked_frames consecutive frames
-        and the control state of the last frame.
+        and the control state that caused the observed transition (true inverse dynamics).
+
+        For 2 frames [t-1, t], we predict the action at time t-1,
+        which caused the motion observed in frame t.
 
         Returns:
             List of dicts with 'frames' (list of frame indices) and 'state' (int)
@@ -121,8 +124,9 @@ class RCCarInverseDynamicsDataset(Dataset):
                       for j in range(len(frame_indices) - 1)):
                 continue  # Skip non-consecutive sequences
 
-            # State corresponds to the last frame in the sequence
-            state = self.labels[i + self.num_stacked_frames - 1]["state"]
+            # State corresponds to the first frame in the sequence (time t-1)
+            # This action causes the transition visible in subsequent frame(s)
+            state = self.labels[i]["state"]
 
             samples.append({
                 "frames": frame_indices,
