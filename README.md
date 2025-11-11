@@ -1,30 +1,80 @@
-# Inverse Dynamics Model (IDM) for RC Car Control
+# nAGV: Inverse Dynamics Model for RC Car Control
 
-A deep learning system that predicts RC car control states from video frames.
+This project investigates whether an inverse dynamics model can be constructed to predict the input controls of an RC car given frames of video filmed from the front of the car. This involved building an RC car that could remotely receive commands, record them, and align them to frames being captured from the onboard camera. 
+
+Approximately 12k frames were captured from this vehicle driving around an NYC apartment. 
+
+All firmware for the RC car can be found in this repository: [cc](https://github.com/podenwaldt/cc)
+
+
 
 ## What It Does
 
 Given consecutive video frames from an RC car's camera, the model predicts which control is active:
-- **STOPPED** (0)
-- **FORWARD** (1)
-- **BACKWARD** (2)
-- **ROTATE_LEFT** (3)
-- **ROTATE_RIGHT** (4)
+- STOPPED (0)
+- FORWARD (1)
+- BACKWARD (2)
+- ROTATE_LEFT (3)
+- ROTATE_RIGHT (4)
+
+This is done by training an off-the-shelf CNN on stacked input frames paired with controls active per frame. Frame stacking for each input sample naively implies temporal information and takes advantage of non-causality during training. Optimal model performance was found at a stack size of 3, predicting the action at time t in a frame stack of (t-1, t, t+1). 
 
 ## Model Versions
 
-### V1: ResNet-18 (2 frames)
+Two models are auditioned in this project to investigate if there are significant differences in performance based on model size. Within each model, various settings for frame-stacking are tested to audition different levels of "naive-temporal" information included per sample. 
+
+
+### V1: ResNet-18 
 - Architecture: ResNet-18
-- Input: 2 consecutive frames
 - Parameters: ~11M
 - Model size: ~44 MB
 
-### V2: MobileNetV2 (4 frames)
+### V2: MobileNetV2 
 - Architecture: MobileNetV2
-- Input: 4 consecutive frames
 - Parameters: ~3-4M
 - Model size: ~14-16 MB
-- **Faster inference** and **smaller size** than V1
+
+## Data in Use
+
+### Overview:
+
+- Total samples: 11,877
+    - Training: 9,994
+    - Validation: 1,212
+    - Test: 671
+- Varied lighting conditions
+- ~30 mins of footage
+- ~5fps avg
+- ~100 laps around apartment
+
+### Training State Distribution:            
+- STOPPED         (0):   1814 (18.15%)
+- FORWARD         (1):   2726 (27.28%)
+- BACKWARD        (2):   1544 (15.45%)
+- ROTATE_LEFT     (3):   1995 (19.96%)
+- ROTATE_RIGHT    (4):   1915 (19.16%)
+
+
+
+## System Performance: High Level
+
+Models perform fairly well when evaluated on new videos sourced from the same envrionment (NYC apartment). They appear to struggle with any generalization beyond this environment, likely due to specific and limited training data. Further investigation is required in this area. 
+
+### MobileNetV2 trained on 3-frame stacks
+
+- Overall Accuracy: 0.9194
+- Macro Precision:  0.9130
+- Macro Recall:     0.9157
+- Macro F1-Score:   0.9130
+
+### ResNet18 trained on 3-frame stacks
+
+- Overall Accuracy: 0.9149
+- Macro Precision:  0.9084
+- Macro Recall:     0.9137
+- Macro F1-Score:   0.9101
+
+
 
 ## Quick Start
 
@@ -59,7 +109,7 @@ python data_prep/combine_recordings.py recordings/val/recording_* --output data/
 python data_prep/combine_recordings.py recordings/test/recording_* --output data/test/
 ```
 
-**Optional: Augment data for better training:**
+**Optional [UNTESTED] : Augment data for better training:** 
 
 ```bash
 # Create darker/brighter variants
@@ -78,29 +128,34 @@ python data_prep/augment_recordings.py data/train/ \
 **Train V1 (ResNet-18, 2 frames):**
 
 ```bash
-python train.py \
-    --train_dir data/train \
-    --val_dir data/val \
-    --test_dir data/test \
-    --batch_size 32 \
-    --num_epochs 50
+!python train.py \
+  --model_version v1 \
+  --train_dir data/train \
+  --val_dir data/val \
+  --test_dir data/test \
+  --num_stacked_frames 2 \
+  --batch_size 128 \
+  --num_epochs 20
 ```
 
-**Train V2 (MobileNetV2, 4 frames):**
+**Train V2 (MobileNetV2, 3 frames):**
 
 ```bash
-python train.py \
-    --model_version v2 \
-    --train_dir data/train \
-    --val_dir data/val \
-    --test_dir data/test \
-    --batch_size 32 \
-    --num_epochs 50
+!python train.py \
+  --model_version v2 \
+  --train_dir data/train \
+  --val_dir data/val \
+  --test_dir data/test \
+  --num_stacked_frames 3 \
+  --batch_size 128 \
+  --num_epochs 20
 ```
 
 The best model will be saved to `checkpoints/idm_best.pth`.
 
 ### Evaluate a Model
+
+Note: If you supply a --test_dir during training, evaluation will take place automatically post-training.
 
 ```bash
 # Evaluate V1
@@ -131,42 +186,28 @@ python testing/example_inference.py \
 
 ### Visualize Predictions
 
+Note: Must match model version and num_stacked_frames it was trained on
+
 ```bash
 # Create visualization video
-python visualizations/visualize_predictions.py \
-    --model_path checkpoints/idm_best.pth \
-    --video_path input_video.mp4 \
-    --output_path predictions.mp4
+    python visualizations/visualize_predictions.py \
+        --model_path idm_final.pth \
+        --model_version v1 \
+        --video_path recordings/demo/test_video.mp4\
+        --output_path visualizations/outputs/test_video_preds.mp4 \
+        --num_stacked_frames 3
 ```
 
-## Project Structure
+### Create Test Video
 
-```
-idm/
-├── inverse_dynamics_model/       # V1 model (ResNet-18, 2 frames)
-├── inverse_dynamics_model_v2/    # V2 model (MobileNetV2, 4 frames)
-├── recordings/                   # Training data recordings
-│   ├── train/                    # Training recordings
-│   ├── val/                      # Validation recordings
-│   └── test/                     # Test recordings
-├── data/                         # Combined datasets (after running combine_recordings.py)
-│   ├── train/
-│   ├── val/
-│   └── test/
-├── data_prep/                    # Data preparation tools
-│   ├── combine_recordings.py     # Combine multiple recordings
-│   └── augment_recordings.py     # Augment with transformations
-├── visualizations/               # Visualization tools
-│   ├── visualize_predictions.py  # Visualize model predictions on video
-│   ├── visualize_labels.py       # Visualize training labels
-│   └── create_test_video.py      # Create test videos
-├── testing/                      # Testing utilities
-│   ├── example_inference.py      # Run inference example
-│   ├── quick_test.py            # Quick pipeline test
-│   └── generate_fake_data.py    # Generate synthetic test data
-├── train.py                      # Training script
-├── evaluate.py                   # Evaluation script
-└── requirements.txt              # Python dependencies
+Needed if you start from raw frames instead of video.
+--data_dir should be a folder of frames. 
+
+```bash
+# Create visualization video
+    python visualizations/create_test_video.py \
+    --data_dir recordings/demo/recording_385126 \
+    --output recordings/demo/demo_385.mp4
 ```
 
 ## Data Preparation Tools
@@ -185,6 +226,8 @@ python data_prep/combine_recordings.py \
 
 ### augment_recordings.py
 
+Note: These are untested!
+
 Creates augmented versions of recordings:
 
 ```bash
@@ -202,28 +245,8 @@ Available augmentations:
 - Rotation and blur
 - Gaussian noise and motion blur
 
-## Python API
 
-### Training
-
-```python
-from inverse_dynamics_model_v2 import IDMConfig
-from inverse_dynamics_model_v2.trainer import train_model
-
-config = IDMConfig(
-    batch_size=32,
-    num_epochs=50,
-    learning_rate=0.001
-)
-
-model, trainer = train_model(
-    train_dir="data/train",
-    val_dir="data/val",
-    config=config
-)
-```
-
-### Inference
+## Inference
 
 ```python
 from inverse_dynamics_model_v2.inference import InverseDynamicsPredictor
@@ -251,14 +274,7 @@ Key parameters in `IDMConfig`:
 | `num_epochs` | 50 | 50 | Training epochs |
 | `learning_rate` | 0.001 | 0.001 | Learning rate |
 | `dropout_rate` | 0.3 | 0.3 | Dropout rate |
-| `use_augmentation` | True | True | Data augmentation |
 
-## Performance Targets
-
-- **Overall accuracy**: >85%
-- **Per-state accuracy**: >80%
-- **Inference time**: <50ms per prediction (GPU)
-- **Training time**: ~2 hours for 10k frames
 
 ## Testing Without Real Data
 
@@ -280,17 +296,14 @@ python testing/generate_fake_data.py \
 ### Out of Memory
 Reduce batch size: `--batch_size 16`
 
-### Poor Accuracy
-- Check dataset balance (should have good distribution across all 5 states)
-- Increase dataset size
-- Try data augmentation
-- Use V2 model with 4 frames for better temporal context
+### Worker errors
+- Set --num_workers 0 in training call
+- Get a GPU
 
-### Slow Training
-- Ensure GPU is being used
-- Increase batch size if memory allows
-- Use V2 model (faster than V1)
+### Model size mismatches in evaluation or training
+- Verify model version is set correctly in call
 
-## License
+-------------
+-------------
 
-MIT License
+Author: Paul Odenwaldt (& Claude)
