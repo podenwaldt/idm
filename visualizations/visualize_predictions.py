@@ -50,10 +50,10 @@ Usage:
         --num_stacked_frames 3
 
     python visualizations/visualize_predictions.py \
-        --model_path idm_final_RN_3F.pth \
-        --model_version v1 \
+        --model_path idm_final_MN_3F_V2.pth \
+        --model_version v2 \
         --video_path recordings/demo/demo_hallway.mp4\
-        --output_path visualizations/outputs/demo_preds_hallway_RN.mp4 \
+        --output_path visualizations/outputs/demo_preds_hallway_MN.mp4 \
         --num_stacked_frames 3 \
         --fps 6
 
