@@ -9,7 +9,7 @@ Usage:
     python visualizations/create_test_video.py --data_dir data/test --output test_video.mp4
     python visualizations/create_test_video.py --data_dir recordings/demo/recording_132278 --output recordings/demo/demo_132.mp4
     python visualizations/create_test_video.py --data_dir recordings/demo/recording_305620 --output recordings/demo/demo_305.mp4
-    python visualizations/create_test_video.py --data_dir recordings/demo/recording_385126 --output recordings/demo/demo_385.mp4
+    python visualizations/create_test_video.py --data_dir recordings/demo/recording_hallway --output recordings/demo/demo_hallway.mp4
 """
 
 import argparse
